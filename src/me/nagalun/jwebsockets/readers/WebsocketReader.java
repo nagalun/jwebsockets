@@ -34,17 +34,20 @@ public final class WebsocketReader extends Reader {
 
 		//final WebSocket ws = (WebSocket) socket.metaData;
 		final ByteBuffer msgBuf = nextMessage.getBuffer();
+		final long maxMsgSize = server.getMaxMessageSize();
 
 		try {
-			while (true) {
-				final int frameLength = FrameUtil.isFrameComplete(msgBuf, server.getMaxMessageSize());
+			while (this.nextMessage.userData != 0) {
+				final int frameLength = FrameUtil.isFrameComplete(msgBuf, maxMsgSize);
 				if (frameLength != -1) {
 					final Frame frame = Frame.fromBytes(msgBuf, true);
 					if (!frame.FIN || (frame.opCode == Opcode.CONTINUATION && currentFragFrame != null)) {
 						if (handleFragment(frame)) {
 							handleFrame(currentFragFrame, socket);
-							currentFragFrame.freeFrame();
-							currentFragFrame = null;
+							if (currentFragFrame != null) { /* Can happen if onMessage calls .close() */
+								currentFragFrame.freeFrame();
+								currentFragFrame = null;
+							}
 						}
 					} else {
 						handleFrame(frame, socket);
@@ -53,19 +56,23 @@ public final class WebsocketReader extends Reader {
 					/* If less than total bytes read */
 					if (!socket.endOfStreamReached && frameLength < this.nextMessage.userData) {
 						msgBuf.position(frameLength);
+						msgBuf.limit(this.nextMessage.userData);
 						msgBuf.compact();
-						this.nextMessage.userData -= frameLength;
-					} else {
-						endMessage();
-						break;
+					} else if (socket.endOfStreamReached) {
+						/* .close() already cleaned everything up, no need to endMessage() */
+						return;
 					}
+					this.nextMessage.userData -= frameLength;
 				} else {
 					break;
 				}
 			}
+			if (this.nextMessage.userData == 0) {
+				endMessage();
+			} else {
+				nextMessage.resize(Math.min(nextMessage.userData * 2, (int) maxMsgSize));
+			}
 		} catch (final InvalidFrameException e) {
-			/*System.out.println(e.getMessage());*/
-			endMessage();
 			socket.close();
 		}
 	}
@@ -105,6 +112,15 @@ public final class WebsocketReader extends Reader {
 			return false;
 		} else {
 			return currentFragFrame.appendFrame(frame, server.getMaxMessageSize());
+		}
+	}
+	
+	@Override
+	public void clear() {
+		super.clear();
+		if (currentFragFrame != null) {
+			currentFragFrame.freeFrame();
+			currentFragFrame = null;
 		}
 	}
 }

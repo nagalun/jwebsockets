@@ -43,7 +43,7 @@ public abstract class Reader implements IMessageReader {
 			nextMessage.userData += bytesRead;
 
 			if (bytesRead != -1 && msgBuf.remaining() == 0) {
-				final int newSize = nextMessage.length * 4;
+				final int newSize = nextMessage.length * 2;
 				if (!nextMessage.resize(newSize)) {
 					socket.close();
 					bytesRead = -1;
@@ -69,7 +69,7 @@ public abstract class Reader implements IMessageReader {
 		}
 	}
 	
-	public final void clear() {
+	public void clear() {
 		endMessage();
 	}
 	

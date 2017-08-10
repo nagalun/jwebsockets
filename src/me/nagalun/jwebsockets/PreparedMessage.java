@@ -10,7 +10,6 @@ public final class PreparedMessage {
 	
 	PreparedMessage(final MappedMemory msg) {
 		this.message = msg;
-		this.message.ref();
 	}
 	
 	public final ByteBuffer getBuffer() {

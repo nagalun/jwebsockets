@@ -7,6 +7,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
 import me.nagalun.jwebsockets.HttpRequest;
+import me.nagalun.jwebsockets.PreparedMessage;
 import me.nagalun.jwebsockets.WebSocket;
 import me.nagalun.jwebsockets.WebSocketServer;
 
@@ -53,7 +54,11 @@ public final class Echo extends WebSocketServer {
 
 	@Override
 	public final void onMessage(final WebSocket ws, final String msg) {
-		ws.send(msg);
+		/* Useful when sending to many sockets at the same time, saves memory and CPU. */
+		PreparedMessage pm = prepareMessage(msg);
+		ws.sendPrepared(pm);
+		/* Free the resources allocated after using the object */
+		pm.finalizeMessage();
 	}
 
 	public final static void main(final String[] args) throws IOException {
