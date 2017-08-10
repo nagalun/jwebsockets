@@ -43,6 +43,8 @@ public final class WebsocketReader extends Reader {
 					if (!frame.FIN || (frame.opCode == Opcode.CONTINUATION && currentFragFrame != null)) {
 						if (handleFragment(frame)) {
 							handleFrame(currentFragFrame, socket);
+							currentFragFrame.freeFrame();
+							currentFragFrame = null;
 						}
 					} else {
 						handleFrame(frame, socket);
@@ -97,6 +99,11 @@ public final class WebsocketReader extends Reader {
 	}
 	
 	public boolean handleFragment(final Frame frame) throws InvalidFrameException {
-		return currentFragFrame.appendFrame(frame, server.getMaxMessageSize());
+		if (currentFragFrame == null) {
+			currentFragFrame = FragmentedFrame.fromFrame(frame, memoryManager);
+			return false;
+		} else {
+			return currentFragFrame.appendFrame(frame, server.getMaxMessageSize());
+		}
 	}
 }

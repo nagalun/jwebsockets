@@ -22,14 +22,19 @@ public class FragmentedFrame implements IFrame {
 	}
 	
 	public final boolean appendFrame(final Frame frame, final long maxSize) throws InvalidFrameException {
-		long newSize = finalData.length + frame.length;
+		final long newSize = finalData.length + frame.length;
 		if (newSize > maxSize) {
 			throw new InvalidFrameException("Frame too large");
 		}
 		if (!finalData.resize((int) newSize)) {
 			throw new InvalidFrameException("Could not resize buffer");
 		}
-		finalData.getBuffer().put(frame.data);
+		final ByteBuffer bb = finalData.getBuffer();
+		bb.position((int) (newSize - frame.length));
+		bb.put(frame.data);
+		if (frame.FIN) {
+			bb.flip();
+		}
 		return frame.FIN;
 	}
 

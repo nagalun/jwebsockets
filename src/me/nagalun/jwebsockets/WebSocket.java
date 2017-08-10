@@ -1,5 +1,6 @@
 package me.nagalun.jwebsockets;
 
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -9,6 +10,7 @@ import me.nagalun.jwebsockets.Protocol.Opcode;
 
 public final class WebSocket {
 	public final Socket socket;
+	private boolean manuallyClosed = false; 
 
 	public WebSocket(final Socket socket) {
 		this.socket = socket;
@@ -41,6 +43,19 @@ public final class WebSocket {
 	}
 
 	public final void close() {
+		manuallyClosed = true;
 		socket.close();
+	}
+	
+	public final boolean isCloseRemote() {
+		return !manuallyClosed;
+	}
+	
+	public final boolean isConnected() {
+		return socket.socketChannel.isConnected();
+	}
+	
+	public final SocketAddress getRemoteSocketAddress() {
+		return socket.getAddress();
 	}
 }

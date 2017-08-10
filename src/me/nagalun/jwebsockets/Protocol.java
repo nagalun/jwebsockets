@@ -10,6 +10,14 @@ import me.nagalun.jwebsockets.misc.Base64;
 
 public class Protocol {
 	private final static String MAGIC_STRING = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+	private final static MessageDigest MD;
+	static {
+		try {
+			MD = MessageDigest.getInstance("SHA-1");
+		} catch (final NoSuchAlgorithmException e) {
+			throw new RuntimeException("NoSuchAlgorithmException: SHA-1");
+		}
+	}
 
 	public enum Opcode {
 		CONTINUATION((byte) 0x0),
@@ -56,12 +64,9 @@ public class Protocol {
 		return true;
 	}
 
-	public static void handleHandshake(final Socket sock, final HttpRequest req)
-			throws NoSuchAlgorithmException {
-		verifyHandshake(req);
+	public static void handleHandshake(final Socket sock, final HttpRequest req) {
 		final String key = req.getHeader("sec-websocket-key");
-		MessageDigest md = MessageDigest.getInstance("SHA-1");
-		byte[] shaKey = md.digest((key + MAGIC_STRING).getBytes());
+		byte[] shaKey = MD.digest((key + MAGIC_STRING).getBytes(StandardCharsets.ISO_8859_1));
 		char[] b64Key = new char[28];
 		Base64.encode(shaKey, b64Key, 0);
 

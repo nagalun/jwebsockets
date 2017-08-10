@@ -43,18 +43,15 @@ public class HttpRequest {
 
 	public final static boolean isRequestComplete(final ByteBuffer arr, final int bytesRead) {
 		/* Very possibly fail prone */
-		arr.mark();
 		int arrLength = arr.position();
 		if (arrLength > MAX_SIZE) {
 			return true;
 		}
 		for (int i = arrLength - bytesRead; i < arrLength; i++) {
 			if (arrLength - i >= 4 && arr.getInt(i) == REQ_END) {
-				arr.reset();
 				return true;
 			}
 		}
-		arr.reset();
 		return false;
 	}
 
@@ -68,7 +65,7 @@ public class HttpRequest {
 			ptr = bb.arrayOffset();
 			arrLength += ptr;
 		} else {
-			arr = new byte[arrLength]; /* test, is this faster than doing .get() all over the place? */
+			arr = new byte[arrLength]; /* TODO: test, is this faster than doing .get() all over the place? */
 			// bb.mark();
 			bb.position(0);
 			bb.get(arr);

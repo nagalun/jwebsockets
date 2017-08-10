@@ -16,7 +16,7 @@ public abstract class Reader implements IMessageReader {
 
 	protected final MemoryManager memoryManager;
 	protected MappedMemory nextMessage = null;
-
+	
 	public Reader(final WebSocketServer server, final MemoryManager memoryManager) {
 		this.server = server;
 		this.memoryManager = memoryManager;
@@ -30,19 +30,20 @@ public abstract class Reader implements IMessageReader {
 			/* TODO: Memory is allocated briefly when a socket is closed, could this be avoided somehow? */
 			nextMessage = memoryManager.getMemory(512);
 		}
-		final int maxMsgSize = (int) server.getMaxMessageSize();
 		ByteBuffer msgBuf = nextMessage.getBuffer();
 		int bytesRead;
 		boolean again;
+		
 		msgBuf.position(nextMessage.userData);
+		
 		do {
 			again = false;
 			bytesRead = socket.read(msgBuf);
 
 			nextMessage.userData += bytesRead;
 
-			if (bytesRead != -1 && msgBuf.remaining() == 0 && nextMessage.length < maxMsgSize) {
-				final int newSize = Math.min(maxMsgSize, nextMessage.length * 4);
+			if (bytesRead != -1 && msgBuf.remaining() == 0) {
+				final int newSize = nextMessage.length * 4;
 				if (!nextMessage.resize(newSize)) {
 					socket.close();
 					bytesRead = -1;
@@ -51,10 +52,6 @@ public abstract class Reader implements IMessageReader {
 				msgBuf = nextMessage.getBuffer();
 				msgBuf.position(nextMessage.userData);
 				again = true;
-			} else if (this.nextMessage.userData >= maxMsgSize) {
-				socket.close();
-				bytesRead = -1;
-				break;
 			}
 		} while (again);
 

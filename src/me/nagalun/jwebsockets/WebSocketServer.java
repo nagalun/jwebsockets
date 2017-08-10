@@ -1,8 +1,10 @@
 package me.nagalun.jwebsockets;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.List;
 
 import com.jenkov.nioserver.IEventHandler;
@@ -11,6 +13,7 @@ import com.jenkov.nioserver.Socket;
 import com.jenkov.nioserver.SocketProcessor;
 import com.jenkov.nioserver.memory.MappedMemory;
 
+import me.nagalun.async.ITaskScheduler;
 import me.nagalun.jwebsockets.Protocol.Opcode;
 
 public abstract class WebSocketServer implements IEventHandler {
@@ -38,7 +41,7 @@ public abstract class WebSocketServer implements IEventHandler {
 	public final void onSocketClose(final Socket sock) {
 		final WebSocket ws = (WebSocket) sock.metaData;
 		if (ws != null) {
-			onClose(ws, 0, null); /* TODO: proper close data */
+			onClose(ws, 0, null, ws.isCloseRemote()); /* TODO: proper close data */
 		}
 	}
 
@@ -51,11 +54,12 @@ public abstract class WebSocketServer implements IEventHandler {
 	public abstract void onStop();
 
 	/* You can return false here to reject the request and close the connection. */
-	public abstract boolean onHttpRequest(final Socket sock, final HttpRequest req);
+	public abstract boolean onHttpRequest(final SocketChannel sock, final HttpRequest req);
 
 	public abstract void onOpen(final WebSocket ws);
 
-	public abstract void onClose(final WebSocket ws, final int code, final ByteBuffer msg);
+	/* remote specifies if the connection was closed by calling .close(), or if the client disconnected. */
+	public abstract void onClose(final WebSocket ws, final int code, final String msg, final boolean remote);
 
 	public abstract void onMessage(final WebSocket ws, final ByteBuffer msg);
 
@@ -65,6 +69,10 @@ public abstract class WebSocketServer implements IEventHandler {
 		onStart();
 		socketProcessor.run();
 		onStop();
+	}
+	
+	public final void stop() {
+		socketProcessor.stop();
 	}
 	
 	public final PreparedMessage prepareMessage(final ByteBuffer msg) {
@@ -78,5 +86,13 @@ public abstract class WebSocketServer implements IEventHandler {
 
 	public final long getMaxMessageSize() {
 		return maxMessageSize;
+	}
+	
+	public final SocketAddress getAddress() {
+		return socketProcessor.getAddress();
+	}
+	
+	public final ITaskScheduler getTaskScheduler() {
+		return socketProcessor.getTaskScheduler();
 	}
 }

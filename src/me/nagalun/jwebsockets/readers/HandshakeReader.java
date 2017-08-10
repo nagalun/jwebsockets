@@ -2,7 +2,6 @@ package me.nagalun.jwebsockets.readers;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.security.NoSuchAlgorithmException;
 
 import com.jenkov.nioserver.IEventHandler;
 import com.jenkov.nioserver.Socket;
@@ -16,7 +15,7 @@ import me.nagalun.jwebsockets.WebSocketServer;
 public final class HandshakeReader extends Reader {
 
 	private final HttpRequest httpParser;
-	
+
 	/* Just for passing it in to the WebsocketReader constructor */
 	private final IEventHandler evtHandler;
 
@@ -36,24 +35,19 @@ public final class HandshakeReader extends Reader {
 
 		final ByteBuffer msgBuf = nextMessage.getBuffer();
 
-		try {
-			if (msgBuf.position() < server.getMaxMessageSize() && HttpRequest.isRequestComplete(msgBuf, bytesRead)) {
-				msgBuf.put(msgBuf.position(), (byte) '\r');
-				if (httpParser.parseBin(msgBuf) == HttpRequest.Status.OK && server.onHttpRequest(socket, httpParser)) {
-					Protocol.handleHandshake(socket, httpParser);
-					socket.metaData = new WebSocket(socket);
-					socket.messageReader = new WebsocketReader(server, memoryManager, evtHandler);
-					server.onOpen((WebSocket) socket.metaData);
-				} else {
-					/* Verification failed */
-					socket.close();
-				}
-				endMessage();
+		if (HttpRequest.isRequestComplete(msgBuf, bytesRead)) {
+			msgBuf.put(msgBuf.position(), (byte) '\r');
+			if (httpParser.parseBin(msgBuf) == HttpRequest.Status.OK && Protocol.verifyHandshake(httpParser)
+					&& server.onHttpRequest(socket.socketChannel, httpParser)) {
+				Protocol.handleHandshake(socket, httpParser);
+				socket.metaData = new WebSocket(socket);
+				socket.messageReader = new WebsocketReader(server, memoryManager, evtHandler);
+				server.onOpen((WebSocket) socket.metaData);
+			} else {
+				/* Verification failed */
+				socket.close();
 			}
-		} catch (final NoSuchAlgorithmException e) {
-			e.printStackTrace();
 			endMessage();
-			socket.close();
 		}
 	}
 }

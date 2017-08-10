@@ -3,9 +3,8 @@ package me.nagalun.jwebsockets.example;
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
-
-import com.jenkov.nioserver.Socket;
 
 import me.nagalun.jwebsockets.HttpRequest;
 import me.nagalun.jwebsockets.WebSocket;
@@ -27,8 +26,9 @@ public final class Echo extends WebSocketServer {
 		System.out.println("Echo server stopped.");
 	}
 
+	/* Return false here to reject the connection */
 	@Override
-	public final boolean onHttpRequest(final Socket sock, final HttpRequest req) {
+	public final boolean onHttpRequest(final SocketChannel sock, final HttpRequest req) {
 		return true;
 	}
 
@@ -42,7 +42,7 @@ public final class Echo extends WebSocketServer {
 	}
 
 	@Override
-	public final void onClose(final WebSocket ws, final int code, final ByteBuffer msg) {
+	public final void onClose(final WebSocket ws, final int code, final String msg, final boolean remote) {
 		System.out.println("Socket closed: " + ws);
 	}
 

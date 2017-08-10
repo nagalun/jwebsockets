@@ -76,7 +76,6 @@ public final class FrameUtil {
 
 		System.arraycopy(data, 0, framedMessage, frameOffset, (int) length);
 
-		
 		return mask ? maskMessage(framedMessage, frameOffset, maskKey) : framedMessage;
 	}
 	
@@ -116,16 +115,16 @@ public final class FrameUtil {
 				return -1;
 			}
 			msgLength = (long) buf.getShort() & 0xFFFF;
-
 		} else if (msgLength == 127) {
 			frameSize += 8;
 			if (totalSize < frameSize) {
 				return -1;
 			}
 			msgLength = buf.getLong() & 0x7FFFFFFFFFFFFFFFL;
-			if (msgLength > maxSize) {
-				throw new InvalidFrameException("Frame too large");
-			}
+		}
+		
+		if (msgLength > maxSize) {
+			throw new InvalidFrameException("Frame too large");
 		}
 
 		buf.position(totalSize);
