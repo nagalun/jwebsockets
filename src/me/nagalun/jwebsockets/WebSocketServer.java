@@ -5,6 +5,7 @@ import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.jenkov.nioserver.IEventHandler;
@@ -77,6 +78,16 @@ public abstract class WebSocketServer implements IEventHandler {
 	
 	public final PreparedMessage prepareMessage(final ByteBuffer msg) {
 		final byte[] framedMsg = FrameUtil.buildFrame(true, Opcode.BINARY.code, false, msg.capacity(), 0, msg);
+		final MappedMemory mem = socketProcessor.getMemoryManager().getMemory(framedMsg.length);
+		final ByteBuffer bb = mem.getBuffer();
+		bb.put(framedMsg);
+		bb.flip();
+		return new PreparedMessage(mem);
+	}
+	
+	public final PreparedMessage prepareMessage(final String msg) {
+		final byte[] strBytes = msg.getBytes(StandardCharsets.UTF_8);
+		final byte[] framedMsg = FrameUtil.buildFrame(true, Opcode.TEXT.code, false, msg.length(), 0, strBytes);
 		final MappedMemory mem = socketProcessor.getMemoryManager().getMemory(framedMsg.length);
 		final ByteBuffer bb = mem.getBuffer();
 		bb.put(framedMsg);

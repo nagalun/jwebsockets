@@ -64,6 +64,7 @@ public final class WebsocketReader extends Reader {
 				}
 			}
 		} catch (final InvalidFrameException e) {
+			/*System.out.println(e.getMessage());*/
 			endMessage();
 			socket.close();
 		}
